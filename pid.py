@@ -41,9 +41,5 @@ class PID():
         
         if self.wind_num and self.wind > self.wind_num:
             self.acc = 0; self.wind = 0
-            
-        # if self.cnt > 10:
-        #     self.acc = 0
-            # self.cnt = 0
-            
+                        
         return mv_action
