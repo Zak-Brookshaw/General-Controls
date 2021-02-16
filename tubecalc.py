@@ -79,7 +79,7 @@ class TubeCalc(PID, FOPTD):
             A, toa, deadt = args[i]
             PID.__init__(self, A, toa, deadt)
             self.dt(self._dt)
-            self.set_wind(100)
+            self.set_wind(1000)
             self._cloop[i] = copy.deepcopy(self.feedback)
     
     def set_setpoint(self, setpts:list):
@@ -102,11 +102,17 @@ class TubeCalc(PID, FOPTD):
     def loop(self, predH:int, span:int):
         
         _time = np.arange(0, predH*self._dt, self._dt)
+        _func = [
+            [self.func[0][0](_time), self.func[0][1](_time)],
+            [self.func[1][0](_time), self.func[1][1](_time)]
+        ]
         _xc = self._xo
         _yh = np.ones((predH, 2)) * np.array(_xc)
         it = 0
         xc_hist = np.array([self._xo])
         mv_hist = np.zeros((1, 2))
+
+
         while it < span:
             
             e1 = self._setpts[0] - _xc[0]
@@ -115,21 +121,17 @@ class TubeCalc(PID, FOPTD):
             m2 = self._cloop[1](e2)
             
             for i in range(2):
-                _temp = self.func[i][0](_time)*m1 + self.func[i][1](_time)*m2 
+                _temp = _func[i][0]*m1 + _func[i][1]*m2 
                 _yh[:, i] = _temp + np.append(_yh[1:, i], _yh[-1, i])
                 _xc[i] = _yh[0, i]
                 d_real = self._solve_sensor(_xc[i])
                 _xc[i] = self.solve_xc(d_real, _xc[i])
             
-            print(_xc)
             it +=1
             xc_hist = np.append(xc_hist, np.array([_xc]), axis=0)
             mv_hist = np.append(mv_hist, np.array([[m1, m2]]), axis=0)
         return xc_hist, mv_hist
             
-            
-            
-        
 # %% xc - > distance  
     def _solve_intersect(self, xc):
         r"""
@@ -294,4 +296,4 @@ class TubeCalc(PID, FOPTD):
             er = np.abs((xc_n - xc_o)/xc_n)
             xc_o = xc_n
             num+=1
-        return xc_n, num
+        return xc_n
